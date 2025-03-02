@@ -1,3 +1,20 @@
+/* file: popup.css | Sort and closes duplicate tabs in your web browser
+ * Copyright (C) 2025 Sergei Timoshchenko
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 body {
     width: 20rem;
 }
@@ -22,26 +39,36 @@ li:nth-child(even) {
 
 /* Style for the first row (icon + title) */
 .title-row {
-    display: flex; /* Enable flexbox for horizontal alignment */
-    align-items: center; /* Vertically align items in the row */
-    gap: 5px; /* Add some space between icon and title */
+    display: flex;
+    /* Enable flexbox for horizontal alignment */
+    align-items: center;
+    /* Vertically align items in the row */
+    gap: 5px;
+    /* Add some space between icon and title */
 }
 
 .title-row img.icon {
-    display: inline-block; /* Ensure icon is inline */
-    vertical-align: middle; /* Vertically align icon with title */
+    display: inline-block;
+    /* Ensure icon is inline */
+    vertical-align: middle;
+    /* Vertically align icon with title */
 }
 
 .title-row .title {
-    display: inline-block; /* Ensure title is inline */
-    vertical-align: middle; /* Vertically align title with icon */
-    margin: 0; /* Reset margins for title div */
+    display: inline-block;
+    /* Ensure title is inline */
+    vertical-align: middle;
+    /* Vertically align title with icon */
+    margin: 0;
+    /* Reset margins for title div */
 }
 
 
 /* Style for the second row (lastAccessed) */
 p.lastAccessed {
-    margin: 0; /* Reset margins for lastAccessed paragraph */
-    font-size: 0.8em; /* Make it smaller */
-    color: gray; /* Style it gray */
+    margin: 0;
+    /* Reset margins for lastAccessed paragraph */
+    font-size: 0.8em;
+    /* Make it smaller */
+    color: gray;
 }

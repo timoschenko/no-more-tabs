@@ -44,13 +44,29 @@ async function gatherTabs() {
     return tabs;
 }
 
-function getHostnameFromUrl(url) {
-    try {
-        const parsedUrl = new URL(url);
-        return parsedUrl.hostname;
-    } catch (e) {
-        console.error("Invalid URL:", url, e);
-        return 'unknown'; // Or some default hostname for invalid URLs
+function filterLitterTabs(tabs, predicate) {
+    const tabs_by_url = new Map();
+    for (const tab of tabs) {
+        const url = tab.url;
+
+        if (tabs_by_url.has(url)) {
+            tabs_by_url.get(url).push(tab);
+        } else {
+            tabs_by_url.set(url, [tab]);
+        }
+    }
+
+    for (const [url, dup_tabs] of tabs_by_url) {
+        if (dup_tabs.lenght <= 1) {
+            continue;
+        }
+        // Sort duplicated by last access (last accessed is first in the list)
+        dup_tabs.sort((a, b) => a.lastAccessed >= b.lastAccessed)
+
+        // skip first item to show only DUPLICATES
+        for (const tab of dup_tabs.slice(1)) {
+            predicate(tab)
+        }
     }
 }
 
@@ -103,63 +119,44 @@ function SortTabs_AddEventListener() {
 }
 
 function populateListOfDuplicates(tabs) {
-    const tabs_by_url = new Map();
-    for (const tab of tabs) {
-        const url = tab.url;
-
-        if (tabs_by_url.has(url)) {
-            tabs_by_url.get(url).push(tab);
-        } else {
-            tabs_by_url.set(url, [tab]);
-        }
-    }
-
     const dupsListElem = document.getElementById('dups-list');
     dupsListElem.innerHTML = ''; // purge data
 
     const template = document.getElementById('li_template');
     const elements = new Set();
-    for (const [url, dup_tabs] of tabs_by_url) {
-        if (dup_tabs.lenght <= 1) {
-            continue;
-        }
 
-        // Sort duplicated by last access (last accessed is first in the list)
-        dup_tabs.sort((a, b) => a.lastAccessed >= b.lastAccessed)
+    filterLitterTabs(tabs, (tab) => {
+        const element = template.content.firstElementChild.cloneNode(true);
 
-        // skip first item to show only DUPLICATES
-        for (const tab of dup_tabs.slice(1)) {
-            const element = template.content.firstElementChild.cloneNode(true);
+        const title = tab.title.split('|')[0].trim();
 
-            const title = tab.title.split('|')[0].trim();
+        element.querySelector('.title').textContent = title;
+        element.querySelector('.lastAccessed').textContent = timeAgo(tab.lastAccessed);
 
-            element.querySelector('.title').textContent = title;
-            element.querySelector('.lastAccessed').textContent = timeAgo(tab.lastAccessed);
+        // Set tab icon
+        const iconElement = element.querySelector('.icon');
+        iconElement.src = tab.favIconUrl || DEFAULT_FAV_ICON;
+        iconElement.style.display = 'inline'; // Show icon if URL is available
 
-            // Set tab icon
-            const iconElement = element.querySelector('.icon');
-            iconElement.src = tab.favIconUrl || DEFAULT_FAV_ICON;
-            iconElement.style.display = 'inline'; // Show icon if URL is available
+        element.querySelector('a').addEventListener('click', async () => {
+            // close tab on click
+            await chrome.tabs.remove(tab.id);
 
-            element.querySelector('a').addEventListener('click', async () => {
-                // close tab on click
-                await chrome.tabs.remove(tab.id);
+            // TODO: add a dedicated button for close and by default - "activate"
+            // need to focus window as well as the active tab
+            // await chrome.tabs.update(tab.id, { active: true });
+            // await chrome.windows.update(tab.windowId, { focused: true });
 
-                // TODO: add a dedicated button for close and by default - "activate"
-                // need to focus window as well as the active tab
-                // await chrome.tabs.update(tab.id, { active: true });
-                // await chrome.windows.update(tab.windowId, { focused: true });
+            try {
+                element.remove(); // Remove li element immediately after closing from popup
+            } catch (error) {
+                console.error(`can not delete element: ${element} - ${error}`);
+            }
+        });
 
-                try {
-                    element.remove(); // Remove li element immediately after closing from popup
-                } catch (error) {
-                    console.error(`can not delete element: ${element} - ${error}`);
-                }
-            });
+        elements.add(element);
+    });
 
-            elements.add(element);
-        }
-    }
     dupsListElem.append(...elements);
 }
 
