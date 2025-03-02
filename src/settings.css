@@ -15,10 +15,53 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/* Light Theme Variables (Default) */
+:root {
+    --settings-background-color: #ffffff;
+    --settings-text-color: #000000;
+    --settings-input-border-color: #ccc;
+    --settings-input-error-border-color: red;
+    --settings-error-message-color: red;
+    --settings-save-indicator-saved-color: green;
+    --settings-save-indicator-saving-color: orange;
+    --settings-button-background-color: #f0f0f0;
+    /* Light button background */
+    --settings-button-text-color: #000000;
+    /* Black button text */
+    --settings-button-border-color: #ccc;
+    /* Light gray button border */
+    --settings-button-hover-background-color: #e0e0e0;
+    /* Slightly darker hover */
+}
+
+/* Dark Theme Variables */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --settings-background-color: #1e1e1e;
+        --settings-text-color: #f0f0f0;
+        --settings-input-border-color: #555;
+        --settings-input-error-border-color: #ff6666;
+        --settings-error-message-color: #ff6666;
+        --settings-save-indicator-saved-color: #90ee90;
+        --settings-save-indicator-saving-color: #ffa500;
+        --settings-button-background-color: #333333;
+        /* Dark button background */
+        --settings-button-text-color: #f0f0f0;
+        /* Light button text */
+        --settings-button-border-color: #555;
+        /* Darker button border */
+        --settings-button-hover-background-color: #555555;
+        /* Slightly lighter dark hover */
+    }
+}
+
+
 body {
     width: 20rem;
     padding: 1rem;
     font-family: sans-serif;
+    background-color: var(--settings-background-color);
+    color: var(--settings-text-color);
 }
 
 h1 {
@@ -41,16 +84,18 @@ h1 {
 .setting-item textarea {
     width: 100%;
     padding: 0.5rem;
-    border: 1px solid #ccc;
+    border: 1px solid var(--settings-input-border-color);
     box-sizing: border-box;
+    background-color: var(--settings-background-color);
+    color: var(--settings-text-color);
 }
 
 .setting-item textarea.error {
-    border-color: red;
+    border-color: var(--settings-input-error-border-color);
 }
 
 .error-message {
-    color: red;
+    color: var(--settings-error-message-color);
     font-size: 0.9em;
     margin-top: 0.3rem;
 }
@@ -79,7 +124,7 @@ h1 {
     /* Make visible when saving */
     animation: blinker 1s linear infinite;
     /* Apply blinking animation */
-    color: orange;
+    color: var(--settings-save-indicator-saving-color);
     /* Optional: Change color while saving */
 }
 
@@ -93,7 +138,7 @@ h1 {
 .save-indicator.saved {
     opacity: 1;
     /* Make sure it's fully visible when saved */
-    color: green;
+    color: var(--settings-save-indicator-saved-color);
     /* Change color when saved */
     animation: fadeOut 1s ease-out forwards;
     /* Fade out animation */
@@ -104,4 +149,23 @@ h1 {
         /* Fade to fully transparent */
         opacity: 0;
     }
+}
+
+/* Button Styles */
+button {
+    background-color: var(--settings-button-background-color);
+    /* Use variable for button background */
+    color: var(--settings-button-text-color);
+    /* Use variable for button text */
+    border: 1px solid var(--settings-button-border-color);
+    /* Use variable for button border */
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    border-radius: 3px;
+    /* Optional: Rounded corners */
+}
+
+button:hover {
+    background-color: var(--settings-button-hover-background-color);
+    /* Use variable for hover background */
 }

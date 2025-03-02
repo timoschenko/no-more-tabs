@@ -15,8 +15,55 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/* Light Theme Variables (Default) */
+:root {
+    --popup-background-color: #ffffff;
+    --popup-text-color: #000000;
+    --popup-list-odd-background: #80808040;
+    --popup-list-even-background: #ffffff;
+    --popup-list-hover-background: #cf56ff57;
+    --popup-last-accessed-color: gray;
+    --popup-button-background-color: #f0f0f0;
+    /* Light button background */
+    --popup-button-text-color: #000000;
+    /* Black button text */
+    --popup-button-border-color: #ccc;
+    /* Light gray button border */
+    --popup-button-hover-background-color: #e0e0e0;
+    /* Slightly darker hover */
+}
+
+/* Dark Theme Variables */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --popup-background-color: #1e1e1e;
+        /* Dark background */
+        --popup-text-color: #f0f0f0;
+        /* Light text */
+        --popup-list-odd-background: #333333;
+        /* Darker list background */
+        --popup-list-even-background: #282828;
+        /* Slightly lighter dark background */
+        --popup-list-hover-background: #6a29a557;
+        /* Darker hover, similar hue */
+        --popup-last-accessed-color: #a0a0a0;
+        /* Lighter gray for last accessed */
+        --popup-button-background-color: #333333;
+        /* Dark button background */
+        --popup-button-text-color: #f0f0f0;
+        /* Light button text */
+        --popup-button-border-color: #555;
+        /* Darker button border */
+        --popup-button-hover-background-color: #555555;
+        /* Slightly lighter dark hover */
+    }
+}
+
+
 body {
     width: 20rem;
+    background-color: var(--popup-background-color);
+    color: var(--popup-text-color);
 }
 
 ul {
@@ -30,49 +77,58 @@ li {
 }
 
 li:nth-child(odd) {
-    background: #80808040;
+    background: var(--popup-list-odd-background);
 }
 
 li:nth-child(even) {
-    background: #ffffff;
+    background: var(--popup-list-even-background);
 }
 
 li:hover {
-    background: #cf56ff57;
+    background: var(--popup-list-hover-background);
 }
 
 /* Style for the first row (icon + title) */
 .title-row {
     display: flex;
-    /* Enable flexbox for horizontal alignment */
     align-items: center;
-    /* Vertically align items in the row */
     gap: 5px;
-    /* Add some space between icon and title */
 }
 
 .title-row img.icon {
     display: inline-block;
-    /* Ensure icon is inline */
     vertical-align: middle;
-    /* Vertically align icon with title */
 }
 
 .title-row .title {
     display: inline-block;
-    /* Ensure title is inline */
     vertical-align: middle;
-    /* Vertically align title with icon */
     margin: 0;
-    /* Reset margins for title div */
 }
 
 
 /* Style for the second row (lastAccessed) */
 p.lastAccessed {
     margin: 0;
-    /* Reset margins for lastAccessed paragraph */
     font-size: 0.8em;
-    /* Make it smaller */
-    color: gray;
+    color: var(--popup-last-accessed-color);
+}
+
+/* Button Styles */
+button {
+    background-color: var(--popup-button-background-color);
+    /* Use variable for button background */
+    color: var(--popup-button-text-color);
+    /* Use variable for button text */
+    border: 1px solid var(--popup-button-border-color);
+    /* Use variable for button border */
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    border-radius: 3px;
+    /* Optional: Rounded corners */
+}
+
+button:hover {
+    background-color: var(--popup-button-hover-background-color);
+    /* Use variable for hover background */
 }

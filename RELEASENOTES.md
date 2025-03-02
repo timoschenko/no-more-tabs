@@ -12,6 +12,7 @@
 
   Good to have here search engine results or sites that produce ton of minor
   priority tabs.
+- Added Light/Dark UI Support;
 
 
 ### Bug fix
