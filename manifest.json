@@ -4,7 +4,7 @@
     "version": "0.2",
     "description": "A super simple chrome extension to sort and control duplicated tabs",
     "permissions": [
-        "tabs"
+        "tabs", "windows"
     ],
     "action": {
         "default_popup": "popup.html"

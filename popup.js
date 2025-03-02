@@ -70,52 +70,49 @@ function filterLitterTabs(tabs, predicate) {
     }
 }
 
-function SortTabs_AddEventListener() {
-    const sort_tabs_button = document.getElementById('sort_tabs');
-    sort_tabs_button.addEventListener('click', async () => {
-        const tabs = await gatherTabs();
+async function Handler_SortTabs() {
+    const tabs = await gatherTabs();
 
-        // TODO: Keep pins pinned
+    // TODO: Keep pins pinned
 
-        // TODO: Respect groups
+    // TODO: Respect groups
 
-        // Sort tabs by title alphabetically
-        tabs.sort((a, b) => {
-            const getCompareHash = (tab) => {
-                const prio_pin = (tab.pinned) ? '0' : '';
+    // Sort tabs by title alphabetically
+    tabs.sort((a, b) => {
+        const getCompareHash = (tab) => {
+            const prio_pin = (tab.pinned) ? '0' : '';
 
-                try {
-                    const parsedUrl = new URL(tab.url);
-                    // reverse host name to respect main domain name
-                    // example www.domain.com vs help.domain.com
-                    const reversed_hostname = parsedUrl.hostname.split('.').reverse().join('.');
+            try {
+                const parsedUrl = new URL(tab.url);
+                // reverse host name to respect main domain name
+                // example www.domain.com vs help.domain.com
+                const reversed_hostname = parsedUrl.hostname.split('.').reverse().join('.');
 
-                    // use protocol to get "major" priority
-                    const raw_proto = parsedUrl.protocol;
-                    const proto = (raw_proto === 'http:' || raw_proto === 'https:')
-                        ? 'http(s):' : raw_proto;
+                // use protocol to get "major" priority
+                const raw_proto = parsedUrl.protocol;
+                const proto = (raw_proto === 'http:' || raw_proto === 'https:')
+                    ? 'http(s):' : raw_proto;
 
-                    return prio_pin + proto + reversed_hostname + '#' + tab.url;
-                } catch (error) {
-                    console.error(`Invalid URL: ${tab.url}`);
+                return prio_pin + proto + reversed_hostname + '#' + tab.url;
+            } catch (error) {
+                console.error(`Invalid URL: ${tab.url}`);
 
-                    return prio_pin + '#' + tab.url;
-                }
-            };
+                return prio_pin + '#' + tab.url;
+            }
+        };
 
-            const hash_a = getCompareHash(a);
-            const hash_b = getCompareHash(b);
+        const hash_a = getCompareHash(a);
+        const hash_b = getCompareHash(b);
 
-            return hash_a.localeCompare(hash_b);
-        });
-
-        // Move tabs to their new positions
-        tabs.forEach((tab, index) => {
-            chrome.tabs.move(tab.id, { index });
-        });
-
-        populateListOfDuplicates(tabs);
+        return hash_a.localeCompare(hash_b);
     });
+
+    // Move tabs to their new positions
+    tabs.forEach((tab, index) => {
+        chrome.tabs.move(tab.id, { index });
+    });
+
+    populateListOfDuplicates(tabs);
 }
 
 function populateListOfDuplicates(tabs) {
@@ -160,8 +157,32 @@ function populateListOfDuplicates(tabs) {
     dupsListElem.append(...elements);
 }
 
+async function Handler_MergeAllWindowsToCurrent() {
+    const currentWindow = await chrome.windows.getCurrent();
+    const currentWindowId = currentWindow.id;
+
+    const allWindows = await chrome.windows.getAll();
+    for (const window of allWindows) {
+        // Skip the current window itself
+        if (window.id === currentWindowId)
+            continue;
+        // Keep only "normal" windows (ie no popups, apps, etc)
+        if (window.type !== chrome.windows.WindowType.NORMAL)
+            continue;
+
+        const tabsInOtherWindow = await chrome.tabs.query({ windowId: window.id });
+        const allTabsId = tabsInOtherWindow.map(object => object.id)
+        await chrome.tabs.move(allTabsId, {
+            // The position to move the window to.
+            // Use -1 to place the tab at the end of the window.
+            index: -1,
+            windowId: currentWindowId
+        });
+    }
+}
+
 /// Main
-async function main() {
+document.addEventListener('DOMContentLoaded', async function main() {
 
     function try_register(predicate, message) {
         try {
@@ -171,11 +192,15 @@ async function main() {
         }
     }
 
-    try_register(SortTabs_AddEventListener, "sort-btn");
+    try_register(async () => {
+        document.getElementById('sort_tabs').addEventListener('click', Handler_SortTabs);
+    }, "sort-btn");
+
+    try_register(async () => {
+        document.getElementById('merge_windows').addEventListener('click', Handler_MergeAllWindowsToCurrent);
+    }, "merge-btn");
 
     const tabs1 = await gatherTabs();
 
     populateListOfDuplicates(tabs1);
-}
-
-main();
+});
