@@ -20,7 +20,28 @@ li:nth-child(even) {
     background: #ffffff;
 }
 
-h3,
-p {
-    margin: 0;
+/* Style for the first row (icon + title) */
+.title-row {
+    display: flex; /* Enable flexbox for horizontal alignment */
+    align-items: center; /* Vertically align items in the row */
+    gap: 5px; /* Add some space between icon and title */
+}
+
+.title-row img.icon {
+    display: inline-block; /* Ensure icon is inline */
+    vertical-align: middle; /* Vertically align icon with title */
+}
+
+.title-row .title {
+    display: inline-block; /* Ensure title is inline */
+    vertical-align: middle; /* Vertically align title with icon */
+    margin: 0; /* Reset margins for title div */
+}
+
+
+/* Style for the second row (lastAccessed) */
+p.lastAccessed {
+    margin: 0; /* Reset margins for lastAccessed paragraph */
+    font-size: 0.8em; /* Make it smaller */
+    color: gray; /* Style it gray */
 }

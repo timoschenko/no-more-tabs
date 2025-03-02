@@ -12,15 +12,18 @@
     <template id="li_template">
         <li>
             <a>
-                <h3 class="title">Tab Title</h3>
-                <p class="pathname">Tab Pathname</p>
+                <div class="title-row"> <img class="icon" loading="lazy" src="images/favicon-16x16.png" alt="Tab Icon" width="16" height="16" />
+                    <div class="title">Tab Title</div>
+                </div>
+                <p class="lastAccessed">12 minutes ago</p>
             </a>
         </li>
     </template>
 
     <h1>No More (Duplicate) Tabs</h1>
     <button id="sort_tabs">Sort Tabs</button>
-    <ul></ul>
+    <ul id="dups-list">
+    </ul>
 
     <script src="./popup.js" type="module"></script>
 </body>

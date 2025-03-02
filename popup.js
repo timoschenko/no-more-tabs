@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+const DEFAULT_FAV_ICON = 'images/favicon-16x16.png';
+
 function timeAgo(lastAccessed) {
     const now = Date.now();
     const diffInMilliseconds = now - lastAccessed;
@@ -40,6 +42,16 @@ async function gatherTabs() {
     });
 
     return tabs;
+}
+
+function getHostnameFromUrl(url) {
+    try {
+        const parsedUrl = new URL(url);
+        return parsedUrl.hostname;
+    } catch (e) {
+        console.error("Invalid URL:", url, e);
+        return 'unknown'; // Or some default hostname for invalid URLs
+    }
 }
 
 function SortTabs_AddEventListener() {
@@ -86,7 +98,7 @@ function SortTabs_AddEventListener() {
             chrome.tabs.move(tab.id, { index });
         });
 
-        // TODO: refresh dulicate tabs list
+        populateListOfDuplicates(tabs);
     });
 }
 
@@ -101,6 +113,9 @@ function populateListOfDuplicates(tabs) {
             tabs_by_url.set(url, [tab]);
         }
     }
+
+    const dupsListElem = document.getElementById('dups-list');
+    dupsListElem.innerHTML = ''; // purge data
 
     const template = document.getElementById('li_template');
     const elements = new Set();
@@ -119,7 +134,12 @@ function populateListOfDuplicates(tabs) {
             const title = tab.title.split('|')[0].trim();
 
             element.querySelector('.title').textContent = title;
-            element.querySelector('.pathname').textContent = timeAgo(tab.lastAccessed);
+            element.querySelector('.lastAccessed').textContent = timeAgo(tab.lastAccessed);
+
+            // Set tab icon
+            const iconElement = element.querySelector('.icon');
+            iconElement.src = tab.favIconUrl || DEFAULT_FAV_ICON;
+            iconElement.style.display = 'inline'; // Show icon if URL is available
 
             element.querySelector('a').addEventListener('click', async () => {
                 // close tab on click
@@ -140,7 +160,7 @@ function populateListOfDuplicates(tabs) {
             elements.add(element);
         }
     }
-    document.querySelector('ul').append(...elements);
+    dupsListElem.append(...elements);
 }
 
 /// Main
