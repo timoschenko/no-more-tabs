@@ -34,93 +34,131 @@ function timeAgo(lastAccessed) {
     return `${daysAgo} days and ${hoursAgo - 24 * daysAgo} hours ago`;
 }
 
-const tabs = await chrome.tabs.query({
-    currentWindow: true
-});
+async function gatherTabs() {
+    const tabs = await chrome.tabs.query({
+        currentWindow: true
+    });
 
-const tabs_by_url = new Map();
-for (const tab of tabs) {
-    const url = tab.url;
-
-    if (tabs_by_url.has(url)) {
-        tabs_by_url.get(url).push(tab);
-    } else {
-        tabs_by_url.set(url, [tab]);
-    }
+    return tabs;
 }
 
-const template = document.getElementById('li_template');
-const elements = new Set();
-for (const [url, dup_tabs] of tabs_by_url) {
-    if (dup_tabs.lenght <= 1) {
-        continue;
-    }
+function SortTabs_AddEventListener() {
+    const sort_tabs_button = document.getElementById('sort_tabs');
+    sort_tabs_button.addEventListener('click', async () => {
+        const tabs = await gatherTabs();
 
-    // Sort duplicated by last access (last accessed is first in the list)
-    dup_tabs.sort((a, b) => a.lastAccessed >= b.lastAccessed)
+        // TODO: Keep pins pinned
 
-    // skip first item to show only DUPLICATES
-    for (const tab of dup_tabs.slice(1)) {
-        const element = template.content.firstElementChild.cloneNode(true);
+        // TODO: Respect groups
 
-        const title = tab.title.split('|')[0].trim();
+        // Sort tabs by title alphabetically
+        tabs.sort((a, b) => {
+            const getCompareHash = (tab) => {
+                const prio_pin = (tab.pinned) ? '0' : '';
 
-        element.querySelector('.title').textContent = title;
-        element.querySelector('.pathname').textContent = timeAgo(tab.lastAccessed);
-        element.querySelector('a').addEventListener('click', async () => {
-            // close tab on click
-            await chrome.tabs.remove(tab.id);
+                try {
+                    const parsedUrl = new URL(tab.url);
+                    // reverse host name to respect main domain name
+                    // example www.domain.com vs help.domain.com
+                    const reversed_hostname = parsedUrl.hostname.split('.').reverse().join('.');
 
-            // TODO: add a dedicated button for close and by default - "activate"
-            // need to focus window as well as the active tab
-            // await chrome.tabs.update(tab.id, { active: true });
-            // await chrome.windows.update(tab.windowId, { focused: true });
+                    // use protocol to get "major" priority
+                    const raw_proto = parsedUrl.protocol;
+                    const proto = (raw_proto === 'http:' || raw_proto === 'https:')
+                        ? 'http(s):' : raw_proto;
+
+                    return prio_pin + proto + reversed_hostname + '#' + tab.url;
+                } catch (error) {
+                    console.error(`Invalid URL: ${tab.url}`);
+
+                    return prio_pin + '#' + tab.url;
+                }
+            };
+
+            const hash_a = getCompareHash(a);
+            const hash_b = getCompareHash(b);
+
+            return hash_a.localeCompare(hash_b);
         });
 
-        elements.add(element);
-    }
+        // Move tabs to their new positions
+        tabs.forEach((tab, index) => {
+            chrome.tabs.move(tab.id, { index });
+        });
+
+        // TODO: refresh dulicate tabs list
+    });
 }
-document.querySelector('ul').append(...elements);
 
-const sort_tabs_button = document.getElementById('sort_tabs');
-sort_tabs_button.addEventListener('click', async () => {
+function populateListOfDuplicates(tabs) {
+    const tabs_by_url = new Map();
+    for (const tab of tabs) {
+        const url = tab.url;
 
-    // TODO: Keep pins pinned
+        if (tabs_by_url.has(url)) {
+            tabs_by_url.get(url).push(tab);
+        } else {
+            tabs_by_url.set(url, [tab]);
+        }
+    }
 
-    // TODO: Respect groups
+    const template = document.getElementById('li_template');
+    const elements = new Set();
+    for (const [url, dup_tabs] of tabs_by_url) {
+        if (dup_tabs.lenght <= 1) {
+            continue;
+        }
 
-    // Sort tabs by title alphabetically
-    tabs.sort((a, b) => {
-        const getCompareHash = (tab) => {
-            const prio_pin = (tab.pinned) ? '0' : '';
+        // Sort duplicated by last access (last accessed is first in the list)
+        dup_tabs.sort((a, b) => a.lastAccessed >= b.lastAccessed)
 
-            try {
-                const parsedUrl = new URL(tab.url);
-                // reverse host name to respect main domain name
-                // example www.domain.com vs help.domain.com
-                const reversed_hostname = parsedUrl.hostname.split('.').reverse().join('.');
+        // skip first item to show only DUPLICATES
+        for (const tab of dup_tabs.slice(1)) {
+            const element = template.content.firstElementChild.cloneNode(true);
 
-                // use protocol to get "major" priority
-                const raw_proto = parsedUrl.protocol;
-                const proto = (raw_proto === 'http:' || raw_proto === 'https:')
-                    ? 'http(s):' : raw_proto;
+            const title = tab.title.split('|')[0].trim();
 
-                return prio_pin + proto + reversed_hostname + '#' + tab.url;
-            } catch (error) {
-                console.error(`Invalid URL: ${tab.url}`);
+            element.querySelector('.title').textContent = title;
+            element.querySelector('.pathname').textContent = timeAgo(tab.lastAccessed);
 
-                return prio_pin + '#' + tab.url;
-            }
-        };
+            element.querySelector('a').addEventListener('click', async () => {
+                // close tab on click
+                await chrome.tabs.remove(tab.id);
 
-        const hash_a = getCompareHash(a);
-        const hash_b = getCompareHash(b);
+                // TODO: add a dedicated button for close and by default - "activate"
+                // need to focus window as well as the active tab
+                // await chrome.tabs.update(tab.id, { active: true });
+                // await chrome.windows.update(tab.windowId, { focused: true });
 
-        return hash_a.localeCompare(hash_b);
-    });
+                try {
+                    element.remove(); // Remove li element immediately after closing from popup
+                } catch (error) {
+                    console.error(`can not delete element: ${element} - ${error}`);
+                }
+            });
 
-    // Move tabs to their new positions
-    tabs.forEach((tab, index) => {
-        chrome.tabs.move(tab.id, { index });
-    });
-});
+            elements.add(element);
+        }
+    }
+    document.querySelector('ul').append(...elements);
+}
+
+/// Main
+async function main() {
+
+    function try_register(predicate, message) {
+        try {
+            predicate();
+        } catch (error) {
+            console.error(`can not register a listener: ${message} - ${error}`);
+        }
+    }
+
+    try_register(SortTabs_AddEventListener, "sort-btn");
+
+    const tabs1 = await gatherTabs();
+
+    populateListOfDuplicates(tabs1);
+}
+
+main();
