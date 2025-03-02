@@ -1,16 +1,19 @@
 {
+    "action": {
+        "default_popup": "src/popup.html"
+    },
+    "description": "A super simple chrome extension to sort and control duplicated tabs",
+    "icons": {
+        "16": "images/favicon-16x16.png",
+        "32": "images/favicon-32x32.png"
+    },
     "manifest_version": 3,
     "name": "No more tabs",
-    "version": "0.2",
-    "description": "A super simple chrome extension to sort and control duplicated tabs",
+    "options_page": "src/settings.html",
     "permissions": [
-        "tabs", "windows"
+        "storage",
+        "tabs",
+        "windows"
     ],
-    "action": {
-        "default_popup": "popup.html"
-    },
-    "icons": {
-        "32": "images/favicon-32x32.png",
-        "16": "images/favicon-16x16.png"
-    }
+    "version": "0.2"
 }

@@ -6,6 +6,7 @@
 
 - Added support of Tab icons;
 - Added "Merge Windows" button that moves all tabs into single window;
+- Added "Settings" page;
 
 ### Bug fix
 

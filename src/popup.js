@@ -181,6 +181,12 @@ async function Handler_MergeAllWindowsToCurrent() {
     }
 }
 
+function openSettingsPopup() {
+    chrome.tabs.create({
+        url: 'src/settings.html'
+    });
+}
+
 /// Main
 document.addEventListener('DOMContentLoaded', async function main() {
 
@@ -200,7 +206,21 @@ document.addEventListener('DOMContentLoaded', async function main() {
         document.getElementById('merge_windows').addEventListener('click', Handler_MergeAllWindowsToCurrent);
     }, "merge-btn");
 
-    const tabs1 = await gatherTabs();
+    try_register(async () => {
+        document.getElementById('settings').addEventListener('click', openSettingsPopup);
+    }, "merge-btn");
 
+    function loadUiSettings() {
+        chrome.storage.sync.get(['HideAppTitle'], (result) => {
+            const storedHideAppTitle = result.HideAppTitle;
+            if (storedHideAppTitle !== undefined && storedHideAppTitle) {
+                document.getElementById('apptitle').hidden = true;
+            }
+        });
+    }
+
+    loadUiSettings();
+
+    const tabs1 = await gatherTabs();
     populateListOfDuplicates(tabs1);
 });
