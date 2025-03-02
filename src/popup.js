@@ -14,7 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-const DEFAULT_FAV_ICON = 'images/favicon-16x16.png';
+const DEFAULT_FAV_ICON = './../images/favicon-16x16.png';
+
+var LITTER = null;
 
 function timeAgo(lastAccessed) {
     const now = Date.now();
@@ -44,10 +46,24 @@ async function gatherTabs() {
     return tabs;
 }
 
+async function BuildUrlLitterFilter() {
+    const UrlLitterStorage = (await chrome.storage.sync.get(['UrlLitter'])).UrlLitter || ''
+    const UrlLitterStrip = UrlLitterStorage.split('\n').map((x) => x.trim())
+    const UrlLitterRegEx = UrlLitterStrip.map((x) => new RegExp(x));
+
+    return UrlLitterRegEx;
+}
+
 function filterLitterTabs(tabs, predicate) {
     const tabs_by_url = new Map();
     for (const tab of tabs) {
         const url = tab.url;
+        // process litter
+        if (LITTER.some((x) => x.test(url))) {
+            predicate(tab);
+            // no point to process for dublicates because it anyway a "garbage"
+            continue;
+        }
 
         if (tabs_by_url.has(url)) {
             tabs_by_url.get(url).push(tab);
@@ -197,6 +213,8 @@ document.addEventListener('DOMContentLoaded', async function main() {
             console.error(`can not register a listener: ${message} - ${error}`);
         }
     }
+
+    LITTER = await BuildUrlLitterFilter();
 
     try_register(async () => {
         document.getElementById('sort_tabs').addEventListener('click', Handler_SortTabs);

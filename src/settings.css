@@ -16,7 +16,7 @@
  */
 
 body {
-    width: 20rem; /* Match popup width for consistency */
+    width: 20rem;
     padding: 1rem;
     font-family: sans-serif;
 }
@@ -29,15 +29,79 @@ h1 {
 .setting-item {
     margin-bottom: 1rem;
     display: flex;
-    align-items: center;
-    justify-content: space-between; /* Align label and checkbox nicely */
+    flex-direction: column;
+    align-items: flex-start;
 }
 
 .setting-item label {
     font-weight: bold;
+    margin-bottom: 0.3rem;
 }
 
-#saveSettings {
-    padding: 0.5rem 1rem;
-    cursor: pointer;
+.setting-item textarea {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+}
+
+.setting-item textarea.error {
+    border-color: red;
+}
+
+.error-message {
+    color: red;
+    font-size: 0.9em;
+    margin-top: 0.3rem;
+}
+
+.settings-actions {
+    /* Style for the container of button and indicator */
+    display: flex;
+    /* Put button and indicator on opposite sides if needed */
+    justify-content: space-between;
+    /* Vertically align them */
+    align-items: center;
+    /* Add some space above the actions */
+    margin-top: 1rem;
+}
+
+
+.save-indicator {
+    opacity: 0;
+    /* Initially hidden */
+    /* Transition for opacity and color */
+    transition: opacity 0.3s ease-in-out, opacity 0.3s ease-in-out, color 0.5s ease-in-out;
+}
+
+.save-indicator.saving {
+    opacity: 1;
+    /* Make visible when saving */
+    animation: blinker 1s linear infinite;
+    /* Apply blinking animation */
+    color: orange;
+    /* Optional: Change color while saving */
+}
+
+@keyframes blinker {
+    50% {
+        /* Blink to 40% opacity */
+        opacity: 0.4;
+    }
+}
+
+.save-indicator.saved {
+    opacity: 1;
+    /* Make sure it's fully visible when saved */
+    color: green;
+    /* Change color when saved */
+    animation: fadeOut 1s ease-out forwards;
+    /* Fade out animation */
+}
+
+@keyframes fadeOut {
+    to {
+        /* Fade to fully transparent */
+        opacity: 0;
+    }
 }

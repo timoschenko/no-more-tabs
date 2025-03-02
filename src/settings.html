@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Extension Settings</title>
     <link rel="stylesheet" href="./settings.css">
 </head>
+
 <body>
     <h1>No More (Duplicate) Tabs Extension Settings</h1>
 
@@ -14,8 +16,18 @@
         <input type="checkbox" id="setting_HideAppTitle">
     </div>
 
-    <!-- button id="saveSettings">Save Settings</button -->
+    <div class="setting-item">
+        <label for="setting_UrlLitter">URL Litter mask (one regex per line):</label>
+        <textarea id="setting_UrlLitter" rows="6" cols="80"></textarea>
+        <div id="error_UrlLitter" class="error-message"></div>
+    </div>
+
+    <div class="settings-actions">
+        <!-- button id="saveSettings">Save Settings</button -->
+        <span id="saveIndicator" class="save-indicator">💾 Saving...</span>
+    </div>
 
     <script src="./settings.js"></script>
 </body>
+
 </html>
