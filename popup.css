@@ -30,11 +30,15 @@ li {
 }
 
 li:nth-child(odd) {
-    background: #80808030;
+    background: #80808040;
 }
 
 li:nth-child(even) {
     background: #ffffff;
+}
+
+li:hover {
+    background: #cf56ff57;
 }
 
 /* Style for the first row (icon + title) */
