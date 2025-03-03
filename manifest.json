@@ -1,6 +1,6 @@
 {
     "action": {
-        "default_popup": "src/popup.html"
+        "default_popup": "popup.html"
     },
     "description": "A super simple chrome extension to sort and control duplicated tabs",
     "icons": {
@@ -9,11 +9,11 @@
     },
     "manifest_version": 3,
     "name": "No more tabs",
-    "options_page": "src/settings.html",
+    "options_page": "settings.html",
     "permissions": [
         "storage",
         "tabs",
         "windows"
     ],
-    "version": "0.2"
+    "version": "0.3"
 }
