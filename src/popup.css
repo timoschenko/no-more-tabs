@@ -59,7 +59,6 @@
     }
 }
 
-
 body {
     width: 20rem;
     background-color: var(--popup-background-color);
@@ -105,7 +104,6 @@ li:hover {
     vertical-align: middle;
     margin: 0;
 }
-
 
 /* Style for the second row (lastAccessed) */
 p.lastAccessed {

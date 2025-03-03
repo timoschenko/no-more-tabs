@@ -1,23 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 
-<head>
+  <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="./popup.css" />
-</head>
+    <meta
+      http-equiv="X-UA-Compatible"
+      content="IE=edge"
+    />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+    <link
+      rel="stylesheet"
+      href="./popup.css"
+    />
+  </head>
 
-<body>
+  <body>
     <template id="li_template">
-        <li>
-            <a>
-                <div class="title-row"> <img class="icon" loading="lazy" src="images/favicon-16x16.png" alt="Tab Icon" width="16" height="16" />
-                    <div class="title">Tab Title</div>
-                </div>
-                <p class="lastAccessed">12 minutes ago</p>
-            </a>
-        </li>
+      <li>
+        <a>
+          <div class="title-row"> <img
+              class="icon"
+              loading="lazy"
+              src="images/favicon-16x16.png"
+              alt="Tab Icon"
+              width="16"
+              height="16"
+            />
+            <div class="title">Tab Title</div>
+          </div>
+          <p class="lastAccessed">12 minutes ago</p>
+        </a>
+      </li>
     </template>
 
     <h1 id="apptitle">No More (Duplicate) Tabs</h1>
@@ -27,7 +43,10 @@
     <ul id="dups-list">
     </ul>
 
-    <script src="./popup.js" type="module"></script>
-</body>
+    <script
+      src="./popup.js"
+      type="module"
+    ></script>
+  </body>
 
 </html>

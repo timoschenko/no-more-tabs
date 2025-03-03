@@ -14,11 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-const DEFAULT_FAV_ICON = './../images/favicon-16x16.png';
+const DEFAULT_FAV_ICON = './images/favicon-16x16.png';
 
-var LITTER = null;
+var LITTER: Array<RegExp> = [];
 
-function timeAgo(lastAccessed) {
+function timeAgo(lastAccessed: number): string {
     const now = Date.now();
     const diffInMilliseconds = now - lastAccessed;
 
@@ -38,50 +38,63 @@ function timeAgo(lastAccessed) {
     return `${daysAgo} days and ${hoursAgo - 24 * daysAgo} hours ago`;
 }
 
-async function gatherTabs() {
+async function gatherTabs(): Promise<Array<chrome.tabs.Tab>> {
     const tabs = await chrome.tabs.query({
-        currentWindow: true
+        currentWindow: true,
     });
 
     return tabs;
 }
 
-async function BuildUrlLitterFilter() {
-    const UrlLitterStorage = (await chrome.storage.sync.get(['UrlLitter'])).UrlLitter || ''
-    const UrlLitterStrip = UrlLitterStorage.split('\n').map((x) => x.trim())
-    const UrlLitterRegEx = UrlLitterStrip.map((x) => new RegExp(x));
+async function BuildUrlLitterFilter(): Promise<Array<RegExp>> {
+    const UrlLitterStorage: string = (
+        (await chrome.storage.sync.get(['UrlLitter'])).UrlLitter || ''
+    ).trim();
+    if (UrlLitterStorage.length === 0)
+        // fast path
+        return [];
 
-    return UrlLitterRegEx;
+    return UrlLitterStorage.split('\n')
+        .map((x: string) => x.trim())
+        .filter((x: string) => x.length > 0)
+        .map((x) => new RegExp(x));
 }
 
-function filterLitterTabs(tabs, predicate) {
-    const tabs_by_url = new Map();
+function filterLitterTabs(
+    tabs: Array<chrome.tabs.Tab>,
+    callback: (tab: chrome.tabs.Tab) => void,
+): void {
+    const tabs_by_url: Map<string, Array<chrome.tabs.Tab>> = new Map();
     for (const tab of tabs) {
         const url = tab.url;
+        if (url === undefined) continue;
         // process litter
         if (LITTER.some((x) => x.test(url))) {
-            predicate(tab);
+            callback(tab);
             // no point to process for dublicates because it anyway a "garbage"
             continue;
         }
 
         if (tabs_by_url.has(url)) {
-            tabs_by_url.get(url).push(tab);
+            tabs_by_url.get(url)!.push(tab);
         } else {
             tabs_by_url.set(url, [tab]);
         }
     }
 
     for (const [url, dup_tabs] of tabs_by_url) {
-        if (dup_tabs.lenght <= 1) {
+        if (dup_tabs.length <= 1) {
             continue;
         }
         // Sort duplicated by last access (last accessed is first in the list)
-        dup_tabs.sort((a, b) => a.lastAccessed >= b.lastAccessed)
+        dup_tabs.sort(
+            (a: chrome.tabs.Tab, b: chrome.tabs.Tab): number =>
+                a.lastAccessed! - b.lastAccessed!,
+        );
 
         // skip first item to show only DUPLICATES
-        for (const tab of dup_tabs.slice(1)) {
-            predicate(tab)
+        for (const tab of dup_tabs.slice(0, -1)) {
+            callback(tab);
         }
     }
 }
@@ -94,24 +107,29 @@ async function Handler_SortTabs() {
     // TODO: Respect groups
 
     // Sort tabs by title alphabetically
-    tabs.sort((a, b) => {
-        const getCompareHash = (tab) => {
-            const prio_pin = (tab.pinned) ? '0' : '';
+    tabs.sort((a: chrome.tabs.Tab, b: chrome.tabs.Tab) => {
+        const getCompareHash = (tab: chrome.tabs.Tab) => {
+            const prio_pin = tab.pinned ? '0' : '';
 
             try {
-                const parsedUrl = new URL(tab.url);
+                const parsedUrl = new URL(tab.url || '');
                 // reverse host name to respect main domain name
                 // example www.domain.com vs help.domain.com
-                const reversed_hostname = parsedUrl.hostname.split('.').reverse().join('.');
+                const reversed_hostname = parsedUrl.hostname
+                    .split('.')
+                    .reverse()
+                    .join('.');
 
                 // use protocol to get "major" priority
                 const raw_proto = parsedUrl.protocol;
-                const proto = (raw_proto === 'http:' || raw_proto === 'https:')
-                    ? 'http(s):' : raw_proto;
+                const proto =
+                    raw_proto === 'http:' || raw_proto === 'https:'
+                        ? 'http(s):'
+                        : raw_proto;
 
                 return prio_pin + proto + reversed_hostname + '#' + tab.url;
             } catch (error) {
-                console.error(`Invalid URL: ${tab.url}`);
+                console.error(`Invalid URL: ${tab.url} - ${error}`);
 
                 return prio_pin + '#' + tab.url;
             }
@@ -124,40 +142,52 @@ async function Handler_SortTabs() {
     });
 
     // Move tabs to their new positions
-    tabs.forEach((tab, index) => {
-        chrome.tabs.move(tab.id, { index });
+    tabs.forEach((tab: chrome.tabs.Tab, new_index: number) => {
+        chrome.tabs.move(tab.id!, { index: new_index });
     });
 
     populateListOfDuplicates(tabs);
 }
 
-function populateListOfDuplicates(tabs) {
+function populateListOfDuplicates(tabs: Array<chrome.tabs.Tab>): void {
     const dupsListElem = document.getElementById('dups-list');
+    if (dupsListElem === null) throw new Error('"dups-list" is missing');
+
     dupsListElem.innerHTML = ''; // purge data
 
-    const template = document.getElementById('li_template');
-    const elements = new Set();
+    const template = document.getElementById(
+        'li_template',
+    ) as HTMLTemplateElement;
+    if (template === null || template.content.firstElementChild === null)
+        throw new Error('"li_template" is missing');
 
-    filterLitterTabs(tabs, (tab) => {
-        const element = template.content.firstElementChild.cloneNode(true);
+    const elements: Set<HTMLElement> = new Set();
 
-        const title = tab.title.split('|')[0].trim();
+    filterLitterTabs(tabs, (tab: chrome.tabs.Tab) => {
+        const tabId = tab.id!;
 
-        element.querySelector('.title').textContent = title;
-        element.querySelector('.lastAccessed').textContent = timeAgo(tab.lastAccessed);
+        const element = template.content.firstElementChild!.cloneNode(
+            true,
+        ) as HTMLElement;
+
+        const title = (tab.title || '').split('|', 1)[0].trim();
+
+        element.querySelector('.title')!.textContent = title;
+        element.querySelector('.lastAccessed')!.textContent =
+            tab.lastAccessed === undefined ? '' : timeAgo(tab.lastAccessed);
 
         // Set tab icon
-        const iconElement = element.querySelector('.icon');
+        const iconElement = element.querySelector('.icon')! as HTMLImageElement;
         iconElement.src = tab.favIconUrl || DEFAULT_FAV_ICON;
         iconElement.style.display = 'inline'; // Show icon if URL is available
 
-        element.querySelector('a').addEventListener('click', async () => {
+        element.querySelector('a')!.addEventListener('click', async () => {
             // close tab on click
-            await chrome.tabs.remove(tab.id);
+            await chrome.tabs.remove(tabId);
 
             // TODO: add a dedicated button for close and by default - "activate"
             // need to focus window as well as the active tab
-            // await chrome.tabs.update(tab.id, { active: true });
+            // await chrome.tabs.update(tabId, { active: true });
             // await chrome.windows.update(tab.windowId, { focused: true });
 
             try {
@@ -173,66 +203,70 @@ function populateListOfDuplicates(tabs) {
     dupsListElem.append(...elements);
 }
 
-async function Handler_MergeAllWindowsToCurrent() {
+async function Handler_MergeAllWindowsToCurrent(): Promise<void> {
     const currentWindow = await chrome.windows.getCurrent();
     const currentWindowId = currentWindow.id;
+    if (currentWindowId === undefined)
+        throw new Error(`currentWindowId is undefined - ${currentWindow}`);
 
     const allWindows = await chrome.windows.getAll();
     for (const window of allWindows) {
         // Skip the current window itself
-        if (window.id === currentWindowId)
-            continue;
+        if (window.id === currentWindowId) continue;
         // Keep only "normal" windows (ie no popups, apps, etc)
-        if (window.type !== chrome.windows.WindowType.NORMAL)
-            continue;
+        if (window.type !== 'normal') continue;
 
-        const tabsInOtherWindow = await chrome.tabs.query({ windowId: window.id });
-        const allTabsId = tabsInOtherWindow.map(object => object.id)
+        const tabsInOtherWindow = await chrome.tabs.query({
+            windowId: window.id,
+        });
+        const allTabsId = tabsInOtherWindow.map((x: chrome.tabs.Tab) => x.id!);
         await chrome.tabs.move(allTabsId, {
             // The position to move the window to.
             // Use -1 to place the tab at the end of the window.
             index: -1,
-            windowId: currentWindowId
+            windowId: currentWindowId,
         });
     }
 }
 
-function openSettingsPopup() {
+function openSettingsPopup(): void {
     chrome.tabs.create({
-        url: 'src/settings.html'
+        url: 'settings.html',
     });
 }
 
 /// Main
-document.addEventListener('DOMContentLoaded', async function main() {
-
-    function try_register(predicate, message) {
+document.addEventListener('DOMContentLoaded', async () => {
+    function try_register(
+        elementId: string,
+        type: string,
+        callback: EventListenerOrEventListenerObject,
+    ): void {
         try {
-            predicate();
+            const elem = document.getElementById(elementId);
+            if (elem === null)
+                throw new Error(`"${elementId}" element is missing`);
+
+            elem.addEventListener(type, callback);
         } catch (error) {
-            console.error(`can not register a listener: ${message} - ${error}`);
+            console.error(`can not register a listener: ${error}`);
         }
     }
 
     LITTER = await BuildUrlLitterFilter();
 
-    try_register(async () => {
-        document.getElementById('sort_tabs').addEventListener('click', Handler_SortTabs);
-    }, "sort-btn");
+    try_register('sort_tabs', 'click', Handler_SortTabs);
 
-    try_register(async () => {
-        document.getElementById('merge_windows').addEventListener('click', Handler_MergeAllWindowsToCurrent);
-    }, "merge-btn");
+    try_register('merge_windows', 'click', Handler_MergeAllWindowsToCurrent);
 
-    try_register(async () => {
-        document.getElementById('settings').addEventListener('click', openSettingsPopup);
-    }, "merge-btn");
+    try_register('settings', 'click', openSettingsPopup);
 
-    function loadUiSettings() {
+    function loadUiSettings(): void {
         chrome.storage.sync.get(['HideAppTitle'], (result) => {
             const storedHideAppTitle = result.HideAppTitle;
             if (storedHideAppTitle !== undefined && storedHideAppTitle) {
-                document.getElementById('apptitle').hidden = true;
+                const apptitleElem = document.getElementById('apptitle');
+                if (apptitleElem != null) apptitleElem.hidden = true;
             }
         });
     }

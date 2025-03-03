@@ -1,5 +1,9 @@
 # RELEASENOTES
 
+## 0.3
+
+- TypeScript;
+
 ## 0.2
 
 ### Features
@@ -13,7 +17,6 @@
   Good to have here search engine results or sites that produce ton of minor
   priority tabs.
 - Added Light/Dark UI Support;
-
 
 ### Bug fix
 

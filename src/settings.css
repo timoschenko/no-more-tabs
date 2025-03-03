@@ -55,7 +55,6 @@
     }
 }
 
-
 body {
     width: 20rem;
     padding: 1rem;
@@ -111,12 +110,14 @@ h1 {
     margin-top: 1rem;
 }
 
-
 .save-indicator {
     opacity: 0;
     /* Initially hidden */
     /* Transition for opacity and color */
-    transition: opacity 0.3s ease-in-out, opacity 0.3s ease-in-out, color 0.5s ease-in-out;
+    transition:
+        opacity 0.3s ease-in-out,
+        opacity 0.3s ease-in-out,
+        color 0.5s ease-in-out;
 }
 
 .save-indicator.saving {

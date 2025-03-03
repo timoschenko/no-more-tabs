@@ -10,7 +10,10 @@ TODO
 
 ## Build from sources
 
-TODO
+```sh
+npm install
+npm run build
+```
 
 ## TODOs
 
