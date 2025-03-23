@@ -69,16 +69,31 @@ function filterLitterTabs(
         const url = tab.url;
         if (url === undefined) continue;
         // process litter
-        if (LITTER.some((x) => x.test(url))) {
+
+        let group_key = url;
+        let hasToSkip = false;
+        for (const re of LITTER) {
+            const skipOrGroup = re.exec(url);
+            if (!skipOrGroup) continue;
+
+            if (skipOrGroup.length > 1) {
+                group_key = skipOrGroup.slice(1).join('+');
+            } else {
+                hasToSkip = true;
+            }
+            break;
+        }
+        if (hasToSkip) {
             callback(tab);
+
             // no point to process for dublicates because it anyway a "garbage"
             continue;
         }
 
-        if (tabs_by_url.has(url)) {
-            tabs_by_url.get(url)!.push(tab);
+        if (tabs_by_url.has(group_key)) {
+            tabs_by_url.get(group_key)!.push(tab);
         } else {
-            tabs_by_url.set(url, [tab]);
+            tabs_by_url.set(group_key, [tab]);
         }
     }
 

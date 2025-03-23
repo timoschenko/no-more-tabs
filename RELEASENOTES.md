@@ -1,5 +1,20 @@
 # RELEASENOTES
 
+## 0.4
+
+### Features
+
+- Added support of grouping using `()` regex. The resulting value will be
+  used to find duplicatess. Example:
+  ```python
+  RegEx:
+  r"\b(github\.com\/[\d\w-]+\/[\d\w-]+\/pull\/\d+)\/?\b"
+
+  # One of those tabs will be marked as dublicate
+  https://github.com/timoschenko/no-more-tabs/pull/3/commits
+  https://github.com/timoschenko/no-more-tabs/pull/3/files
+  ```
+
 ## 0.3
 
 - TypeScript;
