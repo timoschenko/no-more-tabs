@@ -64,6 +64,8 @@ function savingUiStatemachine(
             saveIndicatorSpan.textContent = '💾 Saving...'; // Reset text for next save
             saveIndicatorSpan.style.opacity = '0'; // Ensure it's hidden if animation didn't fully reset
             break;
+        default:
+            console.error('unknown state for savingUiStatemachine', state);
     }
 }
 
@@ -73,111 +75,134 @@ function getElementById(idName: string): HTMLElement {
     return elem;
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+function validateMemoText(memo: HTMLTextAreaElement): void {
+    let errorMessages = [];
+
+    const regexLines = memo.value.split('\n');
+    for (let i = 0; i < regexLines.length; i++) {
+        const regexString = regexLines[i].trim();
+        if (regexString === '') continue;
+
+        try {
+            // Try to create a RegExp object
+            new RegExp(regexString);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : `${error}`;
+            errorMessages.push(`Line ${i + 1}: Invalid regex - ${message}`);
+        }
+    }
+
+    const error_UrlLitterDiv = getElementById('error_UrlLitter');
+    if (errorMessages.length != 0) {
+        // Display error messages
+        memo.classList.add('error');
+        error_UrlLitterDiv.innerHTML = errorMessages
+            .map(escapeHtml)
+            .join('<br>');
+    } else {
+        memo.classList.remove('error');
+        error_UrlLitterDiv.textContent = '';
+    }
+}
+
+function loadSettings(): void {
+    async function loadSettings_handler(result: any): Promise<void> {
+        const storedHideAppTitle = result.HideAppTitle;
+        if (storedHideAppTitle !== undefined) {
+            const setting_HideAppTitle = getElementById(
+                'setting_HideAppTitle',
+            ) as HTMLInputElement;
+            setting_HideAppTitle.checked = storedHideAppTitle;
+        }
+
+        const storedUrlLitter = result.UrlLitter;
+        if (storedUrlLitter !== undefined) {
+            const setting_UrlLitterTextarea = getElementById(
+                'setting_UrlLitter',
+            ) as HTMLTextAreaElement;
+
+            setting_UrlLitterTextarea.value = storedUrlLitter;
+            // Validate on load to show errors if any were saved previously
+            validateMemoText(setting_UrlLitterTextarea);
+        }
+    }
+
+    chrome.storage.sync.get(
+        ['HideAppTitle', 'UrlLitter'],
+        loadSettings_handler,
+    );
+}
+
+function saveSettings() {
+    SAVING_ID = null;
+
+    const saveIndicatorSpan = getElementById('saveIndicator');
+    savingUiStatemachine(saveIndicatorSpan, 'saving');
+
     const setting_HideAppTitle = getElementById(
         'setting_HideAppTitle',
     ) as HTMLInputElement;
+    const HideAppTitleValue = setting_HideAppTitle.checked;
+
     const setting_UrlLitterTextarea = getElementById(
         'setting_UrlLitter',
     ) as HTMLTextAreaElement;
-    const error_UrlLitterDiv = getElementById('error_UrlLitter');
+    const UrlLitterValue = setting_UrlLitterTextarea.value;
+
+    chrome.storage.sync.set(
+        {
+            HideAppTitle: HideAppTitleValue,
+            UrlLitter: UrlLitterValue,
+        },
+        () => {
+            IS_SAVING = false;
+            console.log('Settings saved');
+
+            // Provide "Save complete!" feedback and fade out
+            savingUiStatemachine(saveIndicatorSpan, 'saved');
+
+            // After fade out animation (approx 1s), hide the indicator completely (optional)
+            setTimeout(() => {
+                savingUiStatemachine(saveIndicatorSpan, 'hide');
+            }, 1000); // Match fadeOut animation duration (1s)
+        },
+    );
+}
+
+function initiateSaveSettings() {
+    // New function to handle indicator and delayed save
+    if (IS_SAVING) return;
+
     const saveIndicatorSpan = getElementById('saveIndicator');
 
+    IS_SAVING = true;
+    savingUiStatemachine(saveIndicatorSpan, 'prep');
+    if (SAVING_ID != null) {
+        clearTimeout(SAVING_ID);
+    }
+    // Delay the actual save by 2 seconds
+    SAVING_ID = setTimeout(saveSettings, 2000);
+}
+
+function setupActionCallbacks(): void {
+    // Automatically validate regex memo on input
+    const setting_UrlLitterTextarea = getElementById(
+        'setting_UrlLitter',
+    ) as HTMLTextAreaElement;
+    setting_UrlLitterTextarea.addEventListener('input', () =>
+        validateMemoText(setting_UrlLitterTextarea),
+    );
+
+    // Automatically save settings when checkbox is changed
+    const setting_HideAppTitle = getElementById(
+        'setting_HideAppTitle',
+    ) as HTMLInputElement;
+    setting_HideAppTitle.addEventListener('change', initiateSaveSettings);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
     // Load settings when the settings page is opened
     loadSettings();
 
-    // Automatically validate regex memo on input
-    setting_UrlLitterTextarea.addEventListener('input', validateUrlLitterMemo);
-    // Automatically save settings when checkbox is changed
-    setting_HideAppTitle.addEventListener('change', initiateSaveSettings);
-
-    function initiateSaveSettings() {
-        // New function to handle indicator and delayed save
-        if (IS_SAVING) return;
-
-        IS_SAVING = true;
-        savingUiStatemachine(saveIndicatorSpan, 'prep');
-        if (SAVING_ID != null) {
-            clearTimeout(SAVING_ID);
-        }
-        // Delay the actual save by 2 seconds
-        SAVING_ID = setTimeout(saveSettings, 2000);
-    }
-
-    function saveSettings() {
-        SAVING_ID = null;
-
-        savingUiStatemachine(saveIndicatorSpan, 'saving');
-
-        const HideAppTitleValue = setting_HideAppTitle.checked;
-        const UrlLitterValue = setting_UrlLitterTextarea.value;
-
-        chrome.storage.sync.set(
-            {
-                HideAppTitle: HideAppTitleValue,
-                UrlLitter: UrlLitterValue,
-            },
-            () => {
-                IS_SAVING = false;
-                console.log('Settings saved');
-
-                // Provide "Save complete!" feedback and fade out
-                savingUiStatemachine(saveIndicatorSpan, 'saved');
-
-                // After fade out animation (approx 1s), hide the indicator completely (optional)
-                setTimeout(() => {
-                    savingUiStatemachine(saveIndicatorSpan, 'hide');
-                }, 1000); // Match fadeOut animation duration (1s)
-            },
-        );
-    }
-
-    function loadSettings(): void {
-        chrome.storage.sync.get(['HideAppTitle', 'UrlLitter'], (result) => {
-            const storedHideAppTitle = result.HideAppTitle;
-            if (storedHideAppTitle !== undefined) {
-                setting_HideAppTitle.checked = storedHideAppTitle;
-            }
-
-            const storedUrlLitter = result.UrlLitter;
-            if (storedUrlLitter !== undefined) {
-                setting_UrlLitterTextarea.value = storedUrlLitter;
-                // Validate on load to show errors if any were saved previously
-                validateUrlLitterMemo();
-            }
-        });
-    }
-
-    function validateUrlLitterMemo(): void {
-        const memoText = setting_UrlLitterTextarea.value;
-        const regexLines = memoText.split('\n');
-        let errorMessages = [];
-        let hasError = false;
-
-        for (let i = 0; i < regexLines.length; i++) {
-            const regexString = regexLines[i].trim();
-            if (regexString === '') continue;
-
-            try {
-                // Try to create a RegExp object
-                new RegExp(regexString);
-            } catch (error) {
-                hasError = true;
-                const message =
-                    error instanceof Error ? error.message : `${error}`;
-                errorMessages.push(`Line ${i + 1}: Invalid regex - ${message}`);
-            }
-        }
-
-        if (hasError) {
-            // Display error messages
-            setting_UrlLitterTextarea.classList.add('error');
-            error_UrlLitterDiv.innerHTML = errorMessages
-                .map(escapeHtml)
-                .join('<br>');
-        } else {
-            setting_UrlLitterTextarea.classList.remove('error');
-            error_UrlLitterDiv.textContent = '';
-        }
-    }
+    setupActionCallbacks();
 });
