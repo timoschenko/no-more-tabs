@@ -68,8 +68,8 @@ function filterLitterTabs(
     for (const tab of tabs) {
         const url = tab.url;
         if (url === undefined) continue;
-        // process litter
 
+        // process litter
         let group_key = url;
         let hasToSkip = false;
         for (const re of LITTER) {
@@ -79,7 +79,7 @@ function filterLitterTabs(
             if (skipOrGroup.length > 1) {
                 group_key = skipOrGroup.slice(1).join('+');
             } else {
-                hasToSkip = true;
+                hasToSkip = !tab.pinned; // never close pinned tabs
             }
             break;
         }
@@ -98,18 +98,26 @@ function filterLitterTabs(
     }
 
     for (const [url, dup_tabs] of tabs_by_url) {
-        if (dup_tabs.length <= 1) {
+        const length = dup_tabs.length;
+        if (length <= 1) {
             continue;
         }
-        // Sort duplicated by last access (last accessed is first in the list)
-        dup_tabs.sort(
-            (a: chrome.tabs.Tab, b: chrome.tabs.Tab): number =>
-                a.lastAccessed! - b.lastAccessed!,
-        );
 
-        // skip first item to show only DUPLICATES
-        for (const tab of dup_tabs.slice(0, -1)) {
-            callback(tab);
+        // Sort duplicated by last access (last accessed is first in the list)
+        // And ignore all pinned tabs
+        const tabs_to_close = dup_tabs
+            .filter((tab) => !tab.pinned)
+            .sort(
+                (a: chrome.tabs.Tab, b: chrome.tabs.Tab): number =>
+                    a.lastAccessed! - b.lastAccessed!,
+            );
+
+        if (length == tabs_to_close.length) {
+            // skip first item to show only DUPLICATES
+            tabs_to_close.slice(0, -1).forEach(callback);
+        } else {
+            // At least one item is pinned so the rest are duplicates for sure
+            tabs_to_close.forEach(callback);
         }
     }
 }

@@ -18,7 +18,6 @@ npm run build
 ## TODOs
 
 - [ ] Documentation
-- [ ] Respect pins
 - [ ] Respect groups
 - [ ] Ask if user trying ot close active tab
 - [ ] Check if tab is github pull request and if it is already merged then
