@@ -15,6 +15,10 @@
   https://github.com/timoschenko/no-more-tabs/pull/3/files
   ```
 
+### Bug fix
+
+- Respect pinned tabs;
+
 ## 0.3
 
 - TypeScript;
