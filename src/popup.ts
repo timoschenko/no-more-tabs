@@ -106,7 +106,7 @@ function filterLitterTabs(
         // Sort duplicated by last access (last accessed is first in the list)
         // And ignore all pinned tabs
         const tabs_to_close = dup_tabs
-            .filter((tab) => !tab.pinned)
+            .filter((tab: chrome.tabs.Tab) => !tab.pinned)
             .sort(
                 (a: chrome.tabs.Tab, b: chrome.tabs.Tab): number =>
                     a.lastAccessed! - b.lastAccessed!,
@@ -122,52 +122,55 @@ function filterLitterTabs(
     }
 }
 
+function getCompareHash(tab: chrome.tabs.Tab): string {
+    const prio_pin = tab.pinned ? '0' : '';
+
+    try {
+        const parsedUrl = new URL(tab.url || '');
+        // reverse host name to respect main domain name
+        // example www.domain.com vs help.domain.com
+        const reversed_hostname = parsedUrl.hostname
+            .split('.')
+            .reverse()
+            .join('.');
+
+        // use protocol to get "major" priority
+        const raw_proto = parsedUrl.protocol;
+        const proto =
+            raw_proto === 'http:' || raw_proto === 'https:'
+                ? 'http(s):'
+                : raw_proto;
+
+        return prio_pin + proto + reversed_hostname + '#' + tab.url;
+    } catch (error) {
+        console.error(`Invalid URL: ${tab.url} - ${error}`);
+
+        return prio_pin + '#' + tab.url;
+    }
+}
+
+function tabSorterPredicate(a: chrome.tabs.Tab, b: chrome.tabs.Tab): number {
+    const hash_a = getCompareHash(a);
+    const hash_b = getCompareHash(b);
+
+    return hash_a.localeCompare(hash_b);
+}
+
 async function Handler_SortTabs() {
-    const tabs = await gatherTabs();
-
-    // TODO: Keep pins pinned
-
     // TODO: Respect groups
 
+    const tabs = await gatherTabs();
+
     // Sort tabs by title alphabetically
-    tabs.sort((a: chrome.tabs.Tab, b: chrome.tabs.Tab) => {
-        const getCompareHash = (tab: chrome.tabs.Tab) => {
-            const prio_pin = tab.pinned ? '0' : '';
-
-            try {
-                const parsedUrl = new URL(tab.url || '');
-                // reverse host name to respect main domain name
-                // example www.domain.com vs help.domain.com
-                const reversed_hostname = parsedUrl.hostname
-                    .split('.')
-                    .reverse()
-                    .join('.');
-
-                // use protocol to get "major" priority
-                const raw_proto = parsedUrl.protocol;
-                const proto =
-                    raw_proto === 'http:' || raw_proto === 'https:'
-                        ? 'http(s):'
-                        : raw_proto;
-
-                return prio_pin + proto + reversed_hostname + '#' + tab.url;
-            } catch (error) {
-                console.error(`Invalid URL: ${tab.url} - ${error}`);
-
-                return prio_pin + '#' + tab.url;
-            }
-        };
-
-        const hash_a = getCompareHash(a);
-        const hash_b = getCompareHash(b);
-
-        return hash_a.localeCompare(hash_b);
-    });
+    tabs.sort(tabSorterPredicate);
 
     // Move tabs to their new positions
-    tabs.forEach((tab: chrome.tabs.Tab, new_index: number) => {
-        chrome.tabs.move(tab.id!, { index: new_index });
-    });
+    await chrome.tabs.move(
+        tabs.map((tab: chrome.tabs.Tab) => tab.id!),
+        {
+            index: -1, // Use -1 to place the tab at the end of the window.
+        },
+    );
 
     populateListOfDuplicates(tabs);
 }
